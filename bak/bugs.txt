@@ -1,0 +1,6 @@
+Changing zone title should hide close element until finished
+Check for blank title when changing and reset to default title
+Change chain close button to static element
+Menu should float with scroll
+Add new link to floating menu
+Encode/decode urls so &'s stop crashing everything
