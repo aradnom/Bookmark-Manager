@@ -1,0 +1,128 @@
+// Container class for dropping links into
+
+var Chain = new Class ({
+	Implements : [Options, Events],
+	
+	options : {
+		maxLinks: 20,
+		linkHeight: 50,
+		backgroundColor: '#0f0'
+	},
+	
+	initialize : function ( title, links, options ) {
+		this.setOptions( options );
+
+		this.links = new Array();
+		var that = this;
+		
+		if ( links )
+			for ( var i = 0; i < links.length; i++ )
+				this.links.push( links[i] );
+				
+		this.chain = new Element( 'div', {
+			class: "chain",
+			styles: {
+				backgroundColor: this.options.backgroundColor
+			}
+		});
+		
+		// Add close button
+		this.closeButton = new Element( 'div', {
+			'class': 'chain-close button'
+		})
+		this.chain.grab( this.closeButton );
+		
+		// Add title if set
+		this.chain.grab( new Element( 'div', {
+			'class': 'chain-title',
+			html: title  
+		}));	
+		
+		// Add empty element if no links exist
+		if ( !links || links.length == 0 )
+			this.chain.grab( new Element( 'div', {
+				'class': 'chain-empty',
+				html: "Add links"  
+			}));
+
+		return this;
+	},
+	
+	addLink : function ( link ) {
+		if ( typeof( this.links ) != 'undefined' && this.links.length < this.options.maxLinks ) {
+			this.links.push( link );
+			
+			this.chain.setStyles({
+				height: this.links.length * this.options.linkHeight
+			});
+		}
+	},
+	
+	removeLink : function ( linkID ) {
+		
+	},
+
+    // Should be added only by the container because it needs to reference the parent element;
+	addEffects : function () {
+		var el = this.chain;
+        var that = this;
+		
+		// Drag event		
+		var linkDrag = new Drag.Move( el, {
+			droppables: '.chain-zone',
+			
+			onStart: function (el) {
+				// Set parent z-index higher than all others so link is always above
+				// other containers
+				el.getParent( '.chain-zone' ).setStyle( 'z-index', 2 );
+			},
+			
+			onDrop: function ( el, droppable, event ) {
+				// If droppable exists, make new drop element
+				if ( droppable ) {
+					var newChain = new Element( 'div#' + el.get('id'), {
+						class: 'chain',
+						html: el.get('html')
+					})
+					
+					// Call parent function on new item
+					that.addEffects();
+					
+					// Reset parent element to default z-index before making new element
+					el.getParent( '.chain-zone' ).setStyle( 'z-index', 1 );
+					
+					// Attach new element to droppable and delete old element
+					droppable.grab( newChain );
+
+                    // Destroy old element
+					el.dispose();
+				} else {
+					// Otherwise just snap back to origin
+					el.set( 'morph', {
+						duration: 500,
+						transition: 'elastic:out'
+					});
+					
+					el.morph({
+						top: 0,
+						left: 0
+					});
+				}
+			},
+		 
+			onEnter: function ( element, droppable ) {
+				//To be used later
+			},
+		 
+			onLeave: function ( element, droppable ) {
+				//same as above
+			}
+		});
+	},
+	
+	// Returns a reference to the created chain element
+	getChain : function () {
+		if ( typeof( this.chain ) != 'undefined' )
+			return this.chain;
+	}
+});

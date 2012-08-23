@@ -1,0 +1,147 @@
+// Link class
+
+var Link = new Class ({
+	Implements : [Options, Events],
+	
+	options : {
+		backgroundColor: "#F00"
+	},
+	
+	initialize : function ( url, title, container, options ) {
+		if ( url === '' ) // Don't bother if no url was sent
+			return false;
+		
+		this.setOptions( options );
+		// Regex for breaking links down into prefix, domain, suffix and query bits
+		var linkRegex = /(www\.|http\:\/\/)(localhost|.*)[\.|\/](com|net|org|co\.uk)?(.*)/i
+		
+		// Regex for pulling out shortcut icon href
+		var shortcutRegex = /\<link.*?[shortcut]?\s?icon.*?href\=\"(.*?)\"\s*?\/\>/i;
+		
+		var newLink = new Element( 'div#link-1', {
+			'class': 'link'
+		});	
+
+		// Construct new link from passed info
+		var baseUrl = linkRegex.exec( url )[2];
+		
+		// First put link title or base url if no title is given
+		if ( title !== '' )
+			newLink.grab( new Element( 'div', { 
+				'class': 'link-title',
+				'html': title  
+			}));
+		else
+			newLink.grab( new Element( 'div', {
+				'class': 'base-url',
+				'html': baseUrl
+			}));
+		
+		// Inject shortcut icon from link if found
+		var pageRequest = new Request({
+			url: 'http://localhost/bookmarkcloud/test/index.php',
+			method: 'get',
+			noCache: true,
+			onSuccess: function ( responseText ) {
+				shortcutPath = shortcutRegex.exec( responseText )[1];
+				newLink.grab( new Element( 'div', {
+					'class': 'icon',
+					'html': "<img src='" + shortcutPath + "' border='0' />"
+				}));
+			}
+		})//.send();	
+		
+		// Finally put full url at bottom.  For now. >=(
+		newLink.grab( new Element( 'div', {
+			'class': 'full-url',
+			'html': url
+		}));
+		
+		this.addEffects( newLink );
+		
+		$(container).grab( newLink );
+	},
+	
+	// Binds hover effects to link
+	addEffects : function ( el ) {
+		var that = this;
+		
+		// Hover events
+		el.addEvents({
+			mouseover: function () {
+				el.set( 'morph', {
+					duration: 100,
+					transition: 'sine:out',
+					link: 'cancel'
+				});
+				
+				el.morph({
+					borderRadius: 3,
+					'-moz-border-radius': 3
+				});	
+			},
+			
+			mouseout: function () {
+				el.morph({
+					borderRadius: 20,
+					'-moz-border-radius': 20
+				});
+			}
+		});
+		
+		// Drag event		
+		var linkDrag = new Drag.Move( el, {
+			droppables: '.chain',
+			
+			onStart: function (el) {
+				// Set parent z-index higher than all others so link is always above
+				// other containers
+				el.getParent( '.chain-zone' ).setStyle( 'z-index', 2 );
+			},
+			
+			onDrop: function ( el, droppable, event ) {
+				// If droppable exists, make new drop element
+				if ( droppable ) {
+					var newLink = new Element( 'div#' + el.get('id'), {
+						class: 'link',
+						html: el.get('html')
+					})
+					
+					// Call parent function on new item
+					that.addEffects( newLink )
+					
+					// Reset parent element to default z-index before making new element
+					el.getParent( '.chain-zone' ).setStyle( 'z-index', 1 );
+					
+					// Attach new element to droppable and delete old element
+					droppable.grab( newLink );					
+					el.dispose();
+				} else {
+					// Otherwise just snap back to origin
+					el.set( 'morph', {
+						duration: 500,
+						transition: 'elastic:out'
+					});
+					
+					el.morph({
+						top: 0,
+						left: 0
+					});
+				}
+			},
+		 
+			onEnter: function ( element, droppable ) {
+				//To be used later
+			},
+		 
+			onLeave: function ( element, droppable ) {
+				//same as above
+			}
+		});
+	},
+	
+	getLink: function () {
+		if ( typeof( this.newLink ) != 'undefined' )
+			return this.newLink;
+	}
+});

@@ -1,0 +1,134 @@
+// The shell class contains a set of link containers.
+
+var Shell = new Class ({
+	Implements : [Options, Events],
+	
+	options : {
+		maxChains: 10,
+		width: 1000,
+		widthBuffer: 10,
+		height: 600,
+		zoneWidth: 200
+	},
+	
+	initialize : function ( element, chains, ID, options ) {
+		this.setOptions( options );
+		this.element = $(element);
+				
+		// Set shell properties
+		this.element.setStyles({
+			width: this.options.width,
+			height: this.options.height
+		});
+				
+		// Build shell for output		
+			
+		// Special zone for new links, doesn't contain a permanent chain as it's a working
+		// area for new links or links from deleted containers, that sort of thing.  Can't be
+		// deleted.
+		this.element.grab( new Element( 'div#zone-new', {
+			'class': 'chain-zone',
+			styles: {
+				//width: this.options.zoneWidth	
+			}
+		}));
+		
+		// For each chain in constructor add a new chain to the shell
+		chains.each( function ( el ) {
+			this.addChain( el );				
+		}, this );
+
+        // Added here because the parent element needs to exist before binding d-n-d events
+        chains.each( function( el ) {
+            el.addEffects();
+        }, this );
+		
+		return this;
+	},
+	
+	// Grabs chain to shell element.  Will be added with new zone by default which can just be
+	// deleted by merging with another zone
+	addChain : function ( chain ) {
+		if ( chain ) {
+			var that = this;
+			
+			var newZone = new Element( 'div#zone-' + this.element.getElements('.chain-zone').length, {
+				'class': 'chain-zone'
+			});
+			
+			var newChain = chain.getChain().set( 'id', 'chain-' + this.element.getElements('.chain').length, {} );
+			
+			// Add border before inserting new chain element
+			this.element.grab( new Element( 'div', {
+				'class': 'zone-divider'
+			}));
+			
+			newZone.grab( newChain );
+			
+			// Grabbing and pushing
+			this.element.grab( newZone );
+			
+			// Bind close event - will also remove zone if empty of chains
+			chain.closeButton.addEvent( 'click', function () {
+				that.removeChain( chain );
+			});
+
+            chain.addEffects();
+			
+			// Resize shell
+			this.resize();
+		}
+	},
+	
+	removeChain : function ( chain ) {
+		if ( chain ) {
+			// Get chain element
+			var chain = chain.getChain();
+			
+			// Get parent zone before deleting so it can still be accessed
+			var parent = chain.getParent( '.chain-zone' );
+			
+			// First remove chain
+			chain.dispose();	
+			
+			// Then remove zone if it's empty
+			if ( parent.getElements('.chains').length == 0 ) {
+				// Remove divider before parent, should always be previous element
+				parent.getPrevious().dispose();
+				parent.dispose();				
+			}
+			
+			// Resize shell after removal
+			this.resize();
+		}
+	},
+	
+	mergeChains : function ( first, second ) {
+		
+	},
+	
+	removeFromShell : function ( chainID ) {
+		
+	},
+	
+	resize : function () {
+		var width = 0;
+		
+		$$('.chain-zone, .zone-divider').each( function ( el ) {
+			width += el.getSize().x;
+		});
+		
+		// Set shell properties
+		this.element.setStyles({
+			width: width + this.options.widthBuffer,
+			height: this.options.height
+		});
+	},
+	
+	// Getters/setters
+	
+	getShell : function () {
+		if ( typeof( this.chain ) != 'undefined' )
+			return this.element;
+	}
+});
