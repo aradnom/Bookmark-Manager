@@ -217,6 +217,7 @@ h1 {
 /* Zone css */
 
 .zone {
+    vertical-align: top;
 }
 
 .chain-zone {
